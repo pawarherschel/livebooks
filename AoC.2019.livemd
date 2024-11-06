@@ -9,17 +9,6 @@ Mix.install([
 
 ## ALL
 
-```elixir
-defmodule DBG do
-  def dbg(atm, any) do
-    atm = Kernel.to_string(atm)
-    any = Kernel.to_string(any)
-  
-    IO.puts(atm <> " " <> any)
-  end  
-end
-```
-
 ## DAY 01
 
 --- Day 1: The Tyranny of the Rocket Equation ---
@@ -64,20 +53,21 @@ take its mass, divide by three, round down, and subtract 2
 
 ```elixir
 defmodule Day01 do
-  def p1(number) do
-    number / 3
-    |> floor()
-    |> Kernel.-(2)
-  end
-  def p2(number) when number > 6 do 
-    p1 = Day01.p1(number) 
-    ans = Day01.p1(number) + p2(p1) 
+  def p1(number),
+    do:
+      (number / 3)
+      |> floor()
+      |> Kernel.-(2)
+
+  def p2(number) when number > 6 do
+    p1 = Day01.p1(number)
+    ans = Day01.p1(number) + p2(p1)
     ans
   end
-  def p2(number) when number <= 6 do 
-    0
-  end
+
+  def p2(number) when number <= 6, do: 0
 end
+
 ```
 
 ```elixir
@@ -95,9 +85,10 @@ String.split(example_input)
 |> Enum.map(fn s -> String.to_integer(s) end)
 |> Enum.map(fn number -> Day01.p1(number) end)
 |> Enum.zip(example_output)
-|> Enum.map(fn {a,b} -> if a == b do {true, a, b} else {false, a, b} end end)
+|> Enum.map(fn {a, b} -> if a == b, do: {true, a, b}, else: {false, a, b} end)
 |> dbg()
 |> Enum.all?(fn {v, _, _} -> v end)
+
 ```
 
 ```elixir
@@ -118,9 +109,10 @@ String.split(example_input)
 |> Enum.map(fn s -> String.to_integer(s) end)
 |> Enum.map(fn number -> Day01.p2(number) end)
 |> Enum.zip(example_output)
-|> Enum.map(fn {a,b} -> if a == b do {true, a, b} else {false, a, b} end end)
+|> Enum.map(fn {a, b} -> if a == b, do: {true, a, b}, else: {false, a, b} end)
 |> dbg()
 |> Enum.all?(fn {v, _, _} -> v end)
+
 ```
 
 So, for each module mass, calculate its fuel and add it to the total. Then, treat the fuel amount you just calculated as the input mass and repeat the process, continuing until a fuel requirement is zero or negative. For example:
@@ -135,13 +127,18 @@ What is the sum of the fuel requirements
 
 ```elixir
 if String.split(example_input)
-  |> Enum.map(fn s -> String.to_integer(s) end)
-  |> Enum.map(fn number -> Day01.p2(number) end)
-  |> Enum.zip(example_output)
-  |> Enum.map(fn {a,b} -> if a == b do {true, a, b} else {false, a, b} end end)
-  |> dbg()
-  |> Enum.all?(fn {v, _, _} -> v end)
-do
+   |> Enum.map(fn s -> String.to_integer(s) end)
+   |> Enum.map(fn number -> Day01.p2(number) end)
+   |> Enum.zip(example_output)
+   |> Enum.map(fn {a, b} ->
+     if a == b do
+       {true, a, b}
+     else
+       {false, a, b}
+     end
+   end)
+   |> dbg()
+   |> Enum.all?(fn {v, _, _} -> v end) do
   String.split(puzzle_input_1)
   |> Enum.map(fn s -> String.to_integer(s) end)
   |> Enum.map(fn number -> Day01.p2(number) end)
@@ -149,6 +146,7 @@ do
 else
   IO.puts("meow")
 end
+
 ```
 
 ## DAY 02
@@ -209,7 +207,7 @@ Once you have a working computer, the first step is to restore the gravity assis
 ```elixir
 defmodule PC do
   defstruct memory: [], ip: 0
-  
+
   def parse_inst(%PC{memory: memory, ip: ip}) do
     case Enum.at(memory, ip) do
       1 -> :add
@@ -225,16 +223,8 @@ defmodule PC do
   end
 
   def store(%PC{memory: memory, ip: ip}, addr, val) do
-    # IO.puts(
-    #   "Replacing "
-    #   <> to_string(Enum.at(memory, addr))
-    #   <> " at "
-    #   <> to_string(addr)
-    #   <> " with "
-    #   <> to_string(val)
-    # )
     %PC{memory: List.replace_at(memory, addr, val), ip: ip}
-  end 
+  end
 
   def inc_ip(%PC{memory: memory, ip: ip}), do: %PC{memory: memory, ip: ip + 4}
 
@@ -245,20 +235,21 @@ defmodule PC do
     val = op.(a, b)
     store(%PC{memory: memory, ip: ip}, addr, val)
   end
-  
+
   def execute(%PC{memory: memory, ip: _ip}, inst) when :halt == inst, do: memory
+
   def execute(%PC{memory: memory, ip: ip}, inst) when :halt != inst do
     case inst do
       :add -> load_load_store(%PC{memory: memory, ip: ip}, fn a, b -> a + b end)
       :mult -> load_load_store(%PC{memory: memory, ip: ip}, fn a, b -> a * b end)
     end
   end
-  
+
   def execute(%PC{memory: memory, ip: ip}) do
     inst = parse_inst(%PC{memory: memory, ip: ip})
-    
+
     updated = execute(%PC{memory: memory, ip: ip}, inst)
-    
+
     if is_list(updated) do
       updated
     else
@@ -266,6 +257,7 @@ defmodule PC do
     end
   end
 end
+
 ```
 
 <!-- livebook:{"reevaluate_automatically":true} -->
@@ -287,19 +279,23 @@ example_input = "1,0,0,0,99\n2,3,0,3,99\n2,4,4,5,99,0\n1,1,1,4,99,5,6,0,99\n1,9,
 <!-- livebook:{"reevaluate_automatically":true} -->
 
 ```elixir
-example_output = [
-  "2,0,0,0,99",
-  "2,3,0,6,99",
-  "2,4,4,5,99,9801",
-  "30,1,1,4,2,5,6,0,99",
-  "3500,9,10,70,2,3,11,0,99,30,40,50",
-] |> Enum.map(&(Day02.unstr(&1)))
+example_output =
+  [
+    "2,0,0,0,99",
+    "2,3,0,6,99",
+    "2,4,4,5,99,9801",
+    "30,1,1,4,2,5,6,0,99",
+    "3500,9,10,70,2,3,11,0,99,30,40,50"
+  ]
+  |> Enum.map(&Day02.unstr(&1))
+
 ```
 
 <!-- livebook:{"reevaluate_automatically":true} -->
 
 ```elixir
-op_correct = example_input
+op_correct = 
+  example_input
   |> String.split()
   |> Enum.map(&(Day02.unstr(&1)))
   |> Enum.map(fn memory -> %PC{memory: memory, ip: 0} end)
@@ -321,13 +317,18 @@ op_correct = example_input
 <!-- livebook:{"reevaluate_automatically":true} -->
 
 ```elixir
-input = puzzle_input
-|> String.split(",")
-|> Enum.map(&(String.to_integer(&1)))
-pc = %PC{memory: input, ip: 0}
+input =
+  puzzle_input
+  |> String.split(",")
+  |> Enum.map(&String.to_integer(&1))
+
+pc =
+  %PC{memory: input, ip: 0}
   |> PC.store(1, 12)
   |> PC.store(2, 2)
+
 List.first(PC.execute(pc))
+
 ```
 
 --- Part Two ---
@@ -353,37 +354,289 @@ Find the input noun and verb that cause the program to produce the output 196907
 <!-- livebook:{"reevaluate_automatically":true} -->
 
 ```elixir
-# pc = %PC{memory: input, ip: 0}
+start = Time.utc_now()
 
 combinations = Enum.flat_map(0..99, fn noun -> Enum.map(0..99, fn verb -> [noun, verb] end) end)
 
-lamda = 
-  fn [noun, verb] -> 
-    pc = %PC{memory: input, ip: 0}
-    |> PC.store(1, noun)
-    |> PC.store(2, verb)
-  
-    ans = PC.execute(pc) |> List.first()
+ans =
+  Enum.map(
+    combinations,
+    fn [noun, verb] ->
+      pc =
+        %PC{memory: input, ip: 0}
+        |> PC.store(1, noun)
+        |> PC.store(2, verb)
 
-    # IO.puts(ans)
+      ans = PC.execute(pc) |> List.first()
 
-    [ans, noun, verb]
-end
+      [ans, noun, verb]
+    end
+  )
 
-ans = Enum.map(combinations,
-  fn [noun, verb] -> 
-    pc = %PC{memory: input, ip: 0}
-    |> PC.store(1, noun)
-    |> PC.store(2, verb)
-  
-    ans = PC.execute(pc) |> List.first()
-    
-    [ans, noun, verb]
-  end)
+[_, noun, verb] = Enum.find(ans, fn [ans, _, _] -> ans == 19_690_720 end)
 
-[_, noun, verb] = Enum.find(ans, fn [ans, _, _] -> ans == 19690720 end)
+IO.puts(Time.diff(Time.utc_now(), start, :microsecond) / 1_000_000)
 
 100 * noun + verb
+
 ```
 
-<!-- livebook:{"offset":15686,"stamp":{"token":"XCP.cAsJNbsdxQOAvqdzH0VtAQeo6IGkNJHtEsggquS4wcWoK_Buxx7gT-aFlxguooI25JVK-9jHcaL1Ofx5UYHpsMmE3Yje-BDytjYK8eIEnMp5MCRg-Ag","version":2}} -->
+```elixir
+start = Time.utc_now()
+
+combinations = Enum.flat_map(0..99, fn noun -> Enum.map(0..99, fn verb -> [noun, verb] end) end)
+
+mother = Process.alias()
+
+Enum.each(combinations, fn [noun, verb] ->
+  spawn(fn ->
+    pc =
+      %PC{memory: input, ip: 0}
+      |> PC.store(1, noun)
+      |> PC.store(2, verb)
+
+    ans = PC.execute(pc) |> List.first()
+
+    if ans == 19_690_720 do
+      send(mother, [noun, verb])
+    end
+  end)
+end)
+
+receive do
+  [noun, verb] ->
+    IO.puts(Time.diff(Time.utc_now(), start, :microsecond) / 1_000_000)
+    100 * noun + verb
+end
+
+```
+
+## DAY 03
+
+--- Day 3: Crossed Wires ---
+
+The gravity assist was successful, and you're well on your way to the Venus refuelling station. During the rush back on Earth, the fuel management system wasn't completely installed, so that's next on the priority list.
+
+Opening the front panel reveals a jumble of wires. Specifically, two wires are connected to a central port and extend outward on a grid. You trace the path each wire takes as it leaves the central port, one wire per line of text (your puzzle input).
+
+The wires twist and turn, but the two wires occasionally cross paths. To fix the circuit, you need to find the intersection point closest to the central port. Because the wires are on a grid, use the Manhattan distance for this measurement. While the wires do technically cross right at the central port where they both start, this point does not count, nor does a wire count as crossing with itself.
+
+For example, if the first wire's path is R8,U5,L5,D3, then starting from the central port (o), it goes right 8, up 5, left 5, and finally down 3:
+
+...........
+...........
+...........
+....+----+.
+....|....|.
+....|....|.
+....|....|.
+.........|.
+.o-------+.
+...........
+Then, if the second wire's path is U7,R6,D4,L4, it goes up 7, right 6, down 4, and left 4:
+
+...........
+.+-----+...
+.|.....|...
+.|..+--X-+.
+.|..|..|.|.
+.|.-X--+.|.
+.|..|....|.
+.|.......|.
+.o-------+.
+...........
+These wires cross at two locations (marked X), but the lower-left one is closer to the central port: its distance is 3 + 3 = 6.
+
+Here are a few more examples:
+
+R75,D30,R83,U83,L12,D49,R71,U7,L72
+U62,R66,U55,R34,D71,R55,D58,R83 = distance 159
+R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51
+U98,R91,D20,R16,D67,R40,U7,R15,U6,R7 = distance 135
+What is the Manhattan distance from the central port to the closest intersection?
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+example_input =
+  [
+    "R8,U5,L5,D3\nU7,R6,D4,L4",
+    "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83",
+    "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51\nU98,R91,D20,R16,D67,R40,U7,R15,U6,R7"
+  ]
+  |> Enum.map(&String.split/1)
+  |> Enum.map(fn arr -> Enum.map(arr, fn str -> String.split(str, ",") end) end)
+  |> Enum.map(fn arr ->
+    Enum.map(arr, fn strs -> Enum.map(strs, fn s -> Command.from(s) end) end)
+  end)
+  |> dbg()
+
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Vec2 do
+  defstruct x: 0, y: 0
+end
+
+defmodule Command do
+  defstruct dir: :default, amt: 0
+
+  def from(str) do
+    dir = String.at(str, 0)
+
+    dir =
+      case dir do
+        "U" -> :up
+        "D" -> :down
+        "L" -> :left
+        "R" -> :right
+        u -> IO.puts("Unknown direction: " <> u)
+      end
+
+    amt = String.slice(str, 1..(String.length(str) - 1))
+    amt = String.to_integer(amt)
+
+    %Command{dir: dir, amt: amt}
+  end
+end
+
+defmodule Array2D do
+  defstruct grid: %{%Vec2{x: 0, y: 0} => {1, []}}
+
+  def inc(%Array2D{grid: grid}, %Vec2{x: x, y: y}, idx) do
+    key = %Vec2{x: x, y: y}
+    grid = Map.put_new(grid, key, {1, [idx]})
+
+    grid =
+      Map.update!(grid, key, fn {v, ids} ->
+        if Enum.any?(ids |> Enum.map(fn id -> id == idx end)),
+          do: {v, ids},
+          else: {v + 1, [idx] ++ ids}
+      end)
+
+    %Array2D{grid: grid}
+  end
+
+  def print(%Array2D{grid: grid}) do
+    {{%Vec2{x: min_x, y: _}, _}, {%Vec2{x: max_x, y: _}, _}} =
+      Enum.min_max_by(grid, fn {%Vec2{x: x, y: _}, _} -> x end)
+
+    {{%Vec2{x: _, y: min_y}, _}, {%Vec2{x: _, y: max_y}, _}} =
+      Enum.min_max_by(grid, fn {%Vec2{x: _, y: y}, _} -> y end)
+
+    for y <- max_y..min_y//-1 do
+      for x <- min_x..max_x do
+        key = %Vec2{x: x, y: y}
+
+        IO.write(
+          if x == 0 and y == 0,
+            do: "o",
+            else: Map.get(grid, key, {"."}) |> Kernel.elem(0)
+        )
+      end
+
+      IO.write("\n")
+    end
+
+    %Array2D{grid: grid}
+  end
+end
+
+defmodule Day03 do
+  defstruct turtle: %Vec2{x: 0, y: 0}, world: %Array2D{}
+
+  def move(%Day03{turtle: %Vec2{x: x, y: y}, world: world}, %Command{dir: dir, amt: amt}, idx) do
+    world =
+      1..amt
+      |> Enum.reduce(world, fn offset, world ->
+        case dir do
+          :up -> Array2D.inc(world, %Vec2{x: x, y: y + offset}, idx)
+          :down -> Array2D.inc(world, %Vec2{x: x, y: y - offset}, idx)
+          :left -> Array2D.inc(world, %Vec2{x: x - offset, y: y}, idx)
+          :right -> Array2D.inc(world, %Vec2{x: x + offset, y: y}, idx)
+          _ -> IO.puts("meow")
+        end
+      end)
+
+    case dir do
+      :up -> %Day03{turtle: %Vec2{x: x, y: y + amt}, world: world}
+      :down -> %Day03{turtle: %Vec2{x: x, y: y - amt}, world: world}
+      :left -> %Day03{turtle: %Vec2{x: x - amt, y: y}, world: world}
+      :right -> %Day03{turtle: %Vec2{x: x + amt, y: y}, world: world}
+    end
+  end
+
+  def reset_turtle(%Day03{turtle: _final, world: world}) do
+    %Day03{turtle: %Vec2{}, world: world}
+  end
+
+  def apply_commands(this, commands, idx),
+    do: commands |> List.foldl(this, fn command, this -> Day03.move(this, command, idx) end)
+
+  def apply_wires(this, wires) do
+    wires
+    |> List.foldl(
+      {this, 0},
+      fn commands, {this, w} ->
+        {
+          this |> Day03.apply_commands(commands, w) |> Day03.reset_turtle(),
+          w + 1
+        }
+      end
+    )
+    |> Kernel.elem(0)
+  end
+end
+
+```
+
+```elixir
+wires = example_input |> Enum.at(1)
+
+sim =
+  %Day03{}
+  |> Day03.apply_wires(wires)
+
+sim.world |> Array2D.print()
+
+%Vec2{x: x, y: y} =
+  sim.world.grid
+  |> Enum.filter(fn {_, {v, _}} -> v > 1 end)
+  |> Enum.map(fn {pos, _} -> pos end)
+  |> Enum.min_by(fn %Vec2{x: x, y: y} -> abs(x) + abs(y) end)
+
+{x, y, abs(x) + abs(y)}
+
+```
+
+<!-- livebook:{"attrs":"eyJhc3NpZ25fdG8iOiJwdXp6bGVfaW5wdXQiLCJkYXkiOiIzIiwic2Vzc2lvbl9zZWNyZXQiOiJBT0NfU0VTU0lPTiIsInllYXIiOiIyMDE5In0","chunks":null,"kind":"Elixir.KinoAOC.HelperCell","livebook_object":"smart_cell"} -->
+
+```elixir
+{:ok, puzzle_input} =
+  KinoAOC.download_puzzle("2019", "3", System.fetch_env!("LB_AOC_SESSION"))
+```
+
+```elixir
+wires =
+  puzzle_input
+  |> String.split()
+  |> Enum.map(fn str -> str |> String.split(",") |> Enum.map(&Command.from/1) end)
+
+sim =
+  %Day03{}
+  |> Day03.apply_wires(wires)
+
+# sim.world |> Array2D.print()
+
+%Vec2{x: x, y: y} =
+  sim.world.grid
+  |> Enum.filter(fn {_, {v, _}} -> v > 1 end)
+  |> Enum.map(fn {pos, _} -> pos end)
+  |> Enum.min_by(fn %Vec2{x: x, y: y} -> abs(x) + abs(y) end)
+
+abs(x) + abs(y)
+```
+
+<!-- livebook:{"offset":22277,"stamp":{"token":"XCP.aFEGpE2BgCpoUAk5grNFS05j-teWAYC7ByEi-EwaxKruXTrEglgI31sBgU0CL9XWb59SyWxAywfjw4d3y9_t3OMzy7d7HCvxdgh3ovpGnTzTssWnIPU","version":2}} -->
