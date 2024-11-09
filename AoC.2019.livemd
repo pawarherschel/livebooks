@@ -505,15 +505,15 @@ end
 defmodule Array2D do
   defstruct grid: %{%Vec2{x: 0, y: 0} => {1, []}}
 
-  def inc(%Array2D{grid: grid}, %Vec2{x: x, y: y}, idx) do
+  def inc(%Array2D{grid: grid}, %Vec2{x: x, y: y}, idx, dist) do
     key = %Vec2{x: x, y: y}
-    grid = Map.put_new(grid, key, {1, [idx]})
+    grid = Map.put_new(grid, key, {1, [{idx, dist}]})
 
     grid =
       Map.update!(grid, key, fn {v, ids} ->
-        if Enum.any?(ids |> Enum.map(fn id -> id == idx end)),
+        if Enum.any?(ids |> Enum.map(fn {id, _} -> id == idx end)),
           do: {v, ids},
-          else: {v + 1, [idx] ++ ids}
+          else: {v + 1, [{idx, dist}] ++ ids}
       end)
 
     %Array2D{grid: grid}
@@ -531,9 +531,15 @@ defmodule Array2D do
         key = %Vec2{x: x, y: y}
 
         IO.write(
-          if x == 0 and y == 0,
-            do: "o",
-            else: Map.get(grid, key, {"."}) |> Kernel.elem(0)
+          if x == 0 and y == 0
+            do "o"
+            else 
+              case Map.get(grid, key) do
+                nil -> "."
+                {_, l} -> l |> Enum.map(fn {_, v} -> v end) |> List.foldl(0, fn a, b -> a + b end)
+              end
+            end
+              
         )
       end
 
@@ -547,24 +553,24 @@ end
 defmodule Day03 do
   defstruct turtle: %Vec2{x: 0, y: 0}, world: %Array2D{}
 
-  def move(%Day03{turtle: %Vec2{x: x, y: y}, world: world}, %Command{dir: dir, amt: amt}, idx) do
+  def move(%Day03{turtle: %Vec2{x: x, y: y}, world: world}, %Command{dir: dir, amt: amt}, idx, dist) do
     world =
       1..amt
       |> Enum.reduce(world, fn offset, world ->
         case dir do
-          :up -> Array2D.inc(world, %Vec2{x: x, y: y + offset}, idx)
-          :down -> Array2D.inc(world, %Vec2{x: x, y: y - offset}, idx)
-          :left -> Array2D.inc(world, %Vec2{x: x - offset, y: y}, idx)
-          :right -> Array2D.inc(world, %Vec2{x: x + offset, y: y}, idx)
+          :up -> Array2D.inc(world, %Vec2{x: x, y: y + offset}, idx, dist + offset)
+          :down -> Array2D.inc(world, %Vec2{x: x, y: y - offset}, idx, dist + offset)
+          :left -> Array2D.inc(world, %Vec2{x: x - offset, y: y}, idx, dist + offset)
+          :right -> Array2D.inc(world, %Vec2{x: x + offset, y: y}, idx, dist + offset)
           _ -> IO.puts("meow")
         end
       end)
 
     case dir do
-      :up -> %Day03{turtle: %Vec2{x: x, y: y + amt}, world: world}
-      :down -> %Day03{turtle: %Vec2{x: x, y: y - amt}, world: world}
-      :left -> %Day03{turtle: %Vec2{x: x - amt, y: y}, world: world}
-      :right -> %Day03{turtle: %Vec2{x: x + amt, y: y}, world: world}
+      :up -> {%Day03{turtle: %Vec2{x: x, y: y + amt}, world: world}, dist + amt}
+      :down -> {%Day03{turtle: %Vec2{x: x, y: y - amt}, world: world}, dist + amt}
+      :left -> {%Day03{turtle: %Vec2{x: x - amt, y: y}, world: world}, dist + amt}
+      :right -> {%Day03{turtle: %Vec2{x: x + amt, y: y}, world: world}, dist + amt}
     end
   end
 
@@ -573,7 +579,7 @@ defmodule Day03 do
   end
 
   def apply_commands(this, commands, idx),
-    do: commands |> List.foldl(this, fn command, this -> Day03.move(this, command, idx) end)
+    do: commands |> List.foldl({this, 0}, fn command, {this, dist} -> Day03.move(this, command, idx, dist) end) |> Kernel.elem(0)
 
   def apply_wires(this, wires) do
     wires
@@ -582,7 +588,7 @@ defmodule Day03 do
       fn commands, {this, w} ->
         {
           this |> Day03.apply_commands(commands, w) |> Day03.reset_turtle(),
-          w + 1
+          w + 1,
         }
       end
     )
@@ -604,8 +610,8 @@ sim.world |> Array2D.print()
 %Vec2{x: x, y: y} =
   sim.world.grid
   |> Enum.filter(fn {_, {v, _}} -> v > 1 end)
-  |> Enum.map(fn {pos, _} -> pos end)
-  |> Enum.min_by(fn %Vec2{x: x, y: y} -> abs(x) + abs(y) end)
+  |> Enum.map(fn {v, _} -> v end)
+  |> Enum.min_by(fn %Vec2{x: x  , y: y} -> abs(x) + abs(y) end)
 
 {x, y, abs(x) + abs(y)}
 
@@ -628,8 +634,6 @@ sim =
   %Day03{}
   |> Day03.apply_wires(wires)
 
-# sim.world |> Array2D.print()
-
 %Vec2{x: x, y: y} =
   sim.world.grid
   |> Enum.filter(fn {_, {v, _}} -> v > 1 end)
@@ -639,4 +643,42 @@ sim =
 abs(x) + abs(y)
 ```
 
-<!-- livebook:{"offset":22277,"stamp":{"token":"XCP.aFEGpE2BgCpoUAk5grNFS05j-teWAYC7ByEi-EwaxKruXTrEglgI31sBgU0CL9XWb59SyWxAywfjw4d3y9_t3OMzy7d7HCvxdgh3ovpGnTzTssWnIPU","version":2}} -->
+```elixir
+wires = example_input |> Enum.at(1)
+
+sim =
+  %Day03{}
+  |> Day03.apply_wires(wires)
+
+
+sim.world |> Array2D.print()
+
+
+[{_, a}, {_, b}] = sim.world.grid
+|> Enum.filter(fn {_, {v, _}} -> v > 1 end)
+|> Enum.map(fn {_, {_, l}} -> l end)
+|> Enum.min_by(fn [{_, a}, {_, b}] -> a + b end)
+
+a + b
+```
+
+```elixir
+wires =
+  puzzle_input
+  |> String.split()
+  |> Enum.map(fn str -> str |> String.split(",") |> Enum.map(&Command.from/1) end)
+
+sim =
+  %Day03{}
+  |> Day03.apply_wires(wires)
+
+
+[{_, a}, {_, b}] = sim.world.grid
+|> Enum.filter(fn {_, {v, _}} -> v > 1 end)
+|> Enum.map(fn {_, {_, l}} -> l end)
+|> Enum.min_by(fn [{_, a}, {_, b}] -> a + b end)
+
+a + b
+```
+
+<!-- livebook:{"offset":23264,"stamp":{"token":"XCP.NMNjwcEGEOTDZNgowDH9F2r56JaCtFNbruVgicldkXQxPwLRV6_QWskEiu1q3IbjxE7huNMED_Cj5249N1QxDnPG6aKRvJpIBGlPWQQX2U70MU7CB2k","version":2}} -->
